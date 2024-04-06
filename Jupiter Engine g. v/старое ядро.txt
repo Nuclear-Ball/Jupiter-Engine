@@ -1,0 +1,266 @@
+
+	/*
+	class core_class {
+	public:
+		//GlfwEnv::JWindow window;
+
+		gameobjs::project proj;
+		
+		mouse ms;
+
+		std::string saved_data;
+
+		void init() {
+			//ms.initmouse(window.id);
+			
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glDisable(GL_DEPTH_TEST);
+
+			float currentFrame = glfwGetTime();
+			delta_time = currentFrame - last_frame;
+			last_frame = currentFrame;
+			fps = 1 / delta_time;
+
+			std::string enginedata = JSerial::Utilities::ReadFile(u8"Данные движка.дфю");
+			JSerial::Read dat({ JSerial::Type<string>("font"), JSerial::Array<string>("icons and graphics")}, enginedata);
+			vector<string> graphic_data =  dat.ReadArray<string>("icons and graphics");
+
+			coords_start.LoadRaw(graphic_data[0], {32, 32});
+		}
+
+		pos2d screen_coords(pos2d mouse_pos, pos2d window_size, cam2d* camera) {
+			cam2d& cam = *camera;
+
+			//pos2d upper_left_corner = { cam.center.x - cam.fb.fb_size.x / 2.0f / cam.zoom , 
+			//						    cam.center.y - cam.fb.fb_size.y / 2.0f / cam.zoom };
+
+			pos2d relative_to_center = { (mouse_pos.x - window_size.x / 2),
+										 (mouse_pos.y - window_size.y / 2) };
+
+			pos2df aspr = { static_cast<float>(cam.fb.fb_size.x) / static_cast<float>(window_size.x), 
+							static_cast<float>(cam.fb.fb_size.y) / static_cast<float>(window_size.y) };
+
+			return { static_cast<int>(relative_to_center.x / cam.zoom * aspr.x + cam.center.x) - (relative_to_center.x < 0),
+					 static_cast<int>(relative_to_center.y / cam.zoom * aspr.y + cam.center.y) - (relative_to_center.y < 0)};
+		}
+
+		pos2ds mst(unsigned short layer_id, pos2d mouse_pos, pos2d window_size, cam2d* camera) {
+			pos2d scrcrds = screen_coords(mouse_pos, window_size, camera);
+			gameobjs::room& c_room = *proj.get_curr_room();
+			cam2d& cam = *camera;
+			gameobjs::Layer& c_layer = c_room.layers[layer_id];
+
+			pos2d layer_pos = {c_layer.parallax_speed.x * static_cast<float>(cam.center.x) + c_layer.tmap.offset.x,
+							   c_layer.parallax_speed.y * static_cast<float>(cam.center.y) + c_layer.tmap.offset.y };
+
+			pos2d layer_coords = { scrcrds.x + layer_pos.x, 
+								   scrcrds.y + layer_pos.y };
+
+			return { static_cast<short>(layer_coords.x / c_layer.tmap.grid_size.x - (layer_coords.x < 0)),
+					 static_cast<short>(layer_coords.y / c_layer.tmap.grid_size.y - (layer_coords.y < 0))};
+		}
+
+		//void setvecs(cam2d *cam, Shader* shd) {
+		//	shd->Use();
+		//	shd->setMat4("view", cam->set_vec(cam->fb.fb_size));
+		//	shd->setMat4("projection", glm::ortho(0.0f, static_cast<float>(cam->fb.fb_size.x), static_cast<float>(cam->fb.fb_size.y), 0.0f, -1.0f, 1.0f));
+		//}
+
+		void Start(pos2dus window_size) {
+			glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(window_size.x), static_cast<float>(window_size.y), 0.0f, -1.0f, 1.0f);
+			txt_sh.setMat4("projection", projection);
+			flat_sh.setMat4("projection", projection);
+
+			float currentFrame = glfwGetTime();
+			delta_time = currentFrame - last_frame;
+			last_frame = currentFrame;
+			fps = 1 / delta_time;
+			frame_counter++;
+
+			ms.update();
+		}
+
+		void End() {
+			
+		}
+
+		void process(cam2d *camera, std::string* output = nullptr){
+			/*
+			gameobjs::room& c_room = *proj.get_curr_room();
+			cam2d& cam = *camera;
+
+			for (unsigned short c_layer_id = 0; c_layer_id < c_room.layers.size(); c_layer_id++) {
+				gameobjs::Layer& c_layer = c_room.layers[c_layer_id];
+				pos2d с_layer_pos = { static_cast<int>(c_layer.parallax_speed.x * camera->center.x),
+									  static_cast<int>(c_layer.parallax_speed.y * camera->center.y) };
+
+				pos2d loading_range_x = { (cam.center.x - cam.fb.fb_size.x / 2 / cam.zoom) - с_layer_pos.x,
+										  (cam.center.x + cam.fb.fb_size.x / 2 / cam.zoom) - с_layer_pos.x };
+
+				pos2d loading_range_y = { (cam.center.y - cam.fb.fb_size.y / 2 / cam.zoom) - с_layer_pos.y,
+										  (cam.center.y + cam.fb.fb_size.y / 2 / cam.zoom) - с_layer_pos.y };
+
+				pos2d chunk_loading_range_x = { loading_range_x.x / c_room.chunksize.x - (loading_range_x.x < 0),  
+												loading_range_x.y / c_room.chunksize.x + (loading_range_x.y >= 0) };
+
+				pos2d chunk_loading_range_y = { loading_range_y.x / c_room.chunksize.x - (loading_range_y.x < 0),
+												loading_range_y.y / c_room.chunksize.y + (loading_range_y.y >= 0) };
+
+				if (!c_layer.hidden) {
+
+					//Скрипты
+					for (short chunk_pos_x = chunk_loading_range_x.x; chunk_pos_x < chunk_loading_range_x.y; chunk_pos_x++) {
+						for (short chunk_pos_y = chunk_loading_range_y.x; chunk_pos_y < chunk_loading_range_y.y; chunk_pos_y++) {
+							//gameobjs::ObjectSystem::HeapChunk* c_chunk = c_layer.objs.GetChunk({ chunk_pos_x, chunk_pos_y });
+							//if (c_chunk != nullptr) {
+							//	for (unsigned short obj_id = 0; obj_id < c_chunk->objs.size(); obj_id++) {
+									
+							//		if (!c_chunk->objs[obj_id].IsNull()){}
+
+							//	}
+							//}
+						}
+					}
+					
+
+					//Проверить все обьекты после исполнения скриптов и физики
+					for (short chunk_pos_x = chunk_loading_range_x.x; chunk_pos_x < chunk_loading_range_x.y; chunk_pos_x++) {
+						for (short chunk_pos_y = chunk_loading_range_y.x; chunk_pos_y < chunk_loading_range_y.y; chunk_pos_y++) {
+							gameobjs::ObjectSystem::HeapChunk* c_chunk = c_layer.objs.GetChunk({ chunk_pos_x, chunk_pos_y });
+							if (c_chunk != nullptr) {
+								for (unsigned short obj_id = 0; obj_id < c_chunk->objs.size(); obj_id++) {
+									gameobjs::object* c_obj = c_chunk->objs[obj_id].GetObj();
+
+									//Удалить пустые обьекты
+									if(c_chunk->objs[obj_id].IsNull())
+										c_chunk->objs.erase(c_chunk->objs.begin() + obj_id);
+									else {
+										pos2ds obj_pos_in_chunks = { c_obj->pos.x / c_room.chunksize.x, c_obj->pos.y / c_room.chunksize.y };
+
+										//Переместить обьект в другой чанк, если он вышел из его границ
+										if (obj_pos_in_chunks.x != chunk_pos_x || obj_pos_in_chunks.y != chunk_pos_y) {
+											c_layer.objs.AutoResize(obj_pos_in_chunks)->objs.push_back(c_chunk->objs[obj_id]);
+											c_chunk->objs.erase(c_chunk->objs.begin() + obj_id);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}*/
+		}
+
+		void render(cam2d *camera) {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glDisable(GL_DEPTH_TEST);
+			camera->fb.clear_use(proj.get_curr_room()->background_color);
+
+			//setvecs(camera, &flat_sh);
+			//setvecs(camera, &txt_sh);
+			
+
+			gameobjs::room& c_room = *proj.get_curr_room();
+			cam2d& cam = *camera;
+			
+			for (unsigned short c_layer_id = 0; c_layer_id < c_room.layers.size(); c_layer_id++) {
+				gameobjs::Layer& c_layer = c_room.layers[c_layer_id];
+
+				pos2d base_layer_pos = { static_cast<int>(-c_layer.parallax_speed.x * camera->center.x),
+										 static_cast<int>(-c_layer.parallax_speed.y * camera->center.y) };
+
+				pos2d base_tmap_layer_pos = { c_layer.tmap.offset.x + base_layer_pos.x,
+											  c_layer.tmap.offset.y + base_layer_pos.y };
+
+				pos2d loading_range_x = { (cam.center.x - cam.fb.fb_size.x / 2 / cam.zoom) - base_layer_pos.x, 
+										  (cam.center.x + cam.fb.fb_size.x / 2 / cam.zoom) - base_layer_pos.x };
+
+				pos2d loading_range_y = { (cam.center.y - cam.fb.fb_size.y / 2 / cam.zoom) - base_layer_pos.y, 
+										  (cam.center.y + cam.fb.fb_size.y / 2 / cam.zoom) - base_layer_pos.y };
+
+				if (!c_layer.hidden) {
+					short tmap_loading_range_x[2] = {loading_range_x.x / c_layer.tmap.grid_size.x - (loading_range_x.x < 0),
+													 loading_range_x.y / c_layer.tmap.grid_size.x + (loading_range_x.y >= 0) };
+					short tmap_loading_range_y[2] = { loading_range_y.x / c_layer.tmap.grid_size.x - (loading_range_y.x < 0) - 1,
+													  loading_range_y.y / c_layer.tmap.grid_size.x + (loading_range_y.y >= 0) + 1 };
+					pos2ds tile_pos;
+
+					for (tile_pos.x = tmap_loading_range_x[0]; tile_pos.x < tmap_loading_range_x[1]; tile_pos.x++) {
+						for (tile_pos.y = tmap_loading_range_y[0]; tile_pos.y < tmap_loading_range_y[1]; tile_pos.y++) {
+							Tiles::Tile c_tile = c_layer.tmap[{ tile_pos.x, tile_pos.y }];
+							if (c_tile.tset_value) {
+								try {
+									gameobjs::resources& res = *proj.get_res(c_tile.is_local);
+									Tiles::t_tile* ct_tile = &res.tilesets.at(c_tile.tset_value - 1).tiles.at(c_tile.tile_value);
+
+									//if (animate(&ct_tile->tile_texture.animation_props, ct_tile->tile_texture.GetCurrentAnimation())) 
+									//	loaded_anims.push_back({tile, static_cast<unsigned short>(c_tile.tset_value - 1), c_tile.tile_value, c_tile.is_local});
+									
+									JTexture::BasicTexture* c_texture = &ct_tile->tile_texture.GetCurrentFrame().frame;
+
+									//Texture::Properties props = ct_tile->tile_texture.GetCurrentFrame()->additional_properties;
+
+									pos2d c_tile_pos = { tile_pos.x * c_layer.tmap.grid_size.x,
+														 tile_pos.y * c_layer.tmap.grid_size.y };
+
+									drawtexture_s(&ct_tile->tile_texture, { c_tile_pos.x + base_tmap_layer_pos.x, c_tile_pos.y + base_tmap_layer_pos.y }, { c_layer.transparency });
+								}
+								catch (...) {
+									pos2d c_tile_pos = { tile_pos.x * c_layer.tmap.grid_size.x,
+														 tile_pos.y * c_layer.tmap.grid_size.y};
+									drawtexture(&error_texture, {c_tile_pos.x + base_tmap_layer_pos.x, c_tile_pos.y + base_tmap_layer_pos.y}, 1, {0, 0}, {c_layer.tmap.grid_size.x / 16.0f, c_layer.tmap.grid_size.y / 16.0f});
+								}
+							}
+							else {
+
+							}
+						}
+					}
+
+					//#ifdef EDITOR
+					//if(proj.show_tmap_border_lines && c_layer.show_bl &&(c_layer.tmap.pos_size.x || c_layer.tmap.neg_size.x))
+					//	drawrect({ base_tmap_layer_pos.x - c_layer.tmap.NegSize().x * c_layer.tmap.grid_size.x, -(base_tmap_layer_pos.y - c_layer.tmap.NegSize().y * c_layer.tmap.grid_size.y)},
+					//			 { c_layer.tmap.PosSize().x * c_layer.tmap.grid_size.x + base_tmap_layer_pos.x, -(c_layer.tmap.PosSize().y * c_layer.tmap.grid_size.y + base_tmap_layer_pos.y)});
+					//#endif
+					/*
+					pos2d chunk_loading_range_x = { loading_range_x.x / c_room.chunksize.x - 1,
+													loading_range_x.y / c_room.chunksize.x + 1 };
+
+					pos2d chunk_loading_range_y = { loading_range_y.x / c_room.chunksize.y - 1,
+													loading_range_y.y / c_room.chunksize.y + 1 };
+
+					//ТОЛЬКО отрисовка обьектов, без симуляции
+					for (short chunk_pos_x = chunk_loading_range_x.x; chunk_pos_x < chunk_loading_range_x.y; chunk_pos_x++) {
+						for (short chunk_pos_y = chunk_loading_range_y.x; chunk_pos_y < chunk_loading_range_y.y; chunk_pos_y++) {
+							gameobjs::ObjectSystem::HeapChunk* c_chunk = c_layer.objs.GetChunk({ chunk_pos_x, chunk_pos_y });
+							//drawtexture(&error_texture, { chunk_pos_x * proj.get_curr_room()->chunksize.x, chunk_pos_y * proj.get_curr_room()->chunksize.y }, 0.3f + 0.4f * (c_chunk != nullptr), { 0, 0 }, { static_cast<float>(c_room.chunksize.x / 16), static_cast<float>(c_room.chunksize.y) / 16 });
+							if (c_chunk != nullptr) {
+								for (short i = 0; i < c_chunk->objs.size(); i++) {
+
+									if (!c_chunk->objs[i].IsNull()) {
+										gameobjs::object* a = c_chunk->objs[i].GetObj();
+										gameobjs::prefab* c_pref = &proj.get_res(a->is_pfab_local)->prefabs[a->pfab_id];
+
+										a->animation_props.was_loaded_in_current_frame = 0;
+										if (!animate(&a->animation_props, c_pref->txt.GetCurrentAnimation())) {
+											if (animate(&c_pref->txt.animation_props, c_pref->txt.GetCurrentAnimation()))
+												loaded_anims.push_back({ prefab, a->pfab_id, 0, a->is_pfab_local });
+										}
+
+										drawtexture_s(&c_pref->txt, a->pos, a->texture_props);
+									}
+									//drawtexture(&error_texture, a->pos);
+									//cout << a->pos.x << " " << a->pos.y << "\n";
+								}
+							}
+						}
+					}*/
+				}
+			}
+		}
+
+	private:
+		glm::mat4 view = glm::mat4(1.0f);
+	};
