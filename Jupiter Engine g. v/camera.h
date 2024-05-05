@@ -1,4 +1,172 @@
 #pragma once
+#include <glad/glad.h>
+#include "Texture.h"
+namespace JE {
+	const std::string default_fb_shader_v = "#version 330 core\n"
+											"layout(location = 0) in vec2 aPos;\n"
+											"out vec2 TexCoords;\n"
+											"void main() {\n"
+												"gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);\n"
+												"TexCoords = aPos;\n"
+											"}";
+
+	const std::string default_fb_shader_f = "#version 330 core\n"
+											"out vec4 FragColor;\n"
+											"in vec2 TexCoords;\n"
+											"uniform sampler2D screenTexture;\n"
+											"void main() {\n"
+												"FragColor = texture(screenTexture, TexCoords);\n"
+											"};";
+
+	class Framebuffer : public JTexture::BasicTexture {
+	private:
+		unsigned int fbo_handle = 0;
+		unsigned int rbo_handle = 0;
+
+		inline void ResizeRBO(pos2dus size) {
+			glBindRenderbuffer(GL_RENDERBUFFER, rbo_handle);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, size.x, size.y);
+		}
+
+	public:
+		void Init() {
+			glGenFramebuffers(1, &fbo_handle);
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo_handle);
+
+			BasicTexture::Init();
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, handle, 0);
+
+			glGenRenderbuffers(1, &rbo_handle);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo_handle);
+		}
+
+		inline Framebuffer() : BasicTexture(0) 
+			{ Init(); }
+		inline Framebuffer(bool) : BasicTexture(0) {}
+		inline Framebuffer(pos2dus size) {
+			Init();
+			Resize(size);
+		}
+		inline Framebuffer(const std::string& raw, pos2dus size) : BasicTexture(0) {
+			Init();
+			LoadRaw(raw, size);
+		}
+		inline Framebuffer(const std::string& compr_src) : BasicTexture(0) {
+			Init();
+			LoadCompressed(compr_src);
+		}
+		inline Framebuffer(const std::string& path, bool) : BasicTexture(0) {
+			Init();
+			LoadFile(path);
+		}
+
+		inline Framebuffer(const Framebuffer& cpy) : BasicTexture(0) {
+			Init();
+			this->LoadRaw(cpy.GetBinary(), size);
+		}
+		inline Framebuffer(const BasicTexture& cpy) : BasicTexture(0) {
+			Init();
+			this->LoadRaw(cpy.GetBinary(), size);
+		}
+		Framebuffer& operator=(const Framebuffer& cpy) {
+			this->LoadRaw(cpy.GetBinary(), size);
+			return *this;
+		}
+		Framebuffer& operator=(const BasicTexture& cpy) {
+			this->LoadRaw(cpy.GetBinary(), size);
+			return *this;
+		}
+
+		Framebuffer(Framebuffer&& cpy) noexcept : BasicTexture(0) {
+			handle = cpy.handle;
+			size = cpy.size;
+
+			rbo_handle = cpy.rbo_handle;
+			fbo_handle = cpy.fbo_handle;
+		}
+		Framebuffer& operator=(Framebuffer&& cpy) noexcept {
+			std::swap(handle, cpy.handle);
+			std::swap(size, cpy.size);
+
+			std::swap(rbo_handle, cpy.rbo_handle);
+			std::swap(fbo_handle, cpy.fbo_handle);
+		}
+
+		operator BasicTexture() {
+			return *dynamic_cast<BasicTexture*>(this);
+		}
+
+		~Framebuffer() {
+			glDeleteRenderbuffers(1, &rbo_handle);
+			glDeleteFramebuffers(1, &fbo_handle);
+		}
+
+
+		void LoadRaw(const std::string& raw, pos2dus size) {
+			BasicTexture::LoadRaw(raw, size);
+			ResizeRBO(this->size);
+		} 
+		void LoadCompressed(const std::string& compr_src) {
+			BasicTexture::LoadCompressed(compr_src);
+			ResizeRBO(this->size);
+		} 
+		void LoadFile(const std::string& path) {
+			BasicTexture::LoadFile(path);
+			ResizeRBO(this->size);
+		}
+
+		void Resize(pos2dus new_size) {
+			size = new_size;
+			ResizeRBO(new_size);
+
+			glBindTexture(GL_TEXTURE_2D, handle);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, new_size.x, new_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		}
+		void Bind() const {
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo_handle);
+			glViewport(0, 0, size.x, size.y);
+		}
+
+		inline unsigned int GetFboHandle() 
+			{ return fbo_handle; }
+		inline unsigned int GetRboHandle()
+			{ return rbo_handle; }
+
+		void Deserialize(const std::string src) {
+			BasicTexture::Deserialize(src);
+			ResizeRBO(size);
+		}
+	};
+
+	class Camera {
+	public:
+		Framebuffer frm = Framebuffer(0);
+		pos2d center_pos = { 0, 0 };
+		JTexture::Frame::Properties props;
+
+		inline Camera() 
+			{ frm.Init(); }
+		Camera(bool){}
+
+		inline void Init()
+			{ frm.Init(); }
+
+		inline glm::mat4 MakeViewMatrix() const {
+			glm::mat4 view = props.Matrix();
+			view = glm::translate(view, glm::vec3(center_pos.x - (static_cast<float>(frm.GetSize().x) / 2.f), center_pos.y - (static_cast<float>(frm.GetSize().y) / 2.f), 0.f));
+			return view;
+		}
+		inline glm::mat4 MakeProjection() const 
+			{ return glm::ortho<float>(0, frm.GetSize().x, 0, frm.GetSize().y); }
+		inline glm::mat4 MakePV() const 
+			{ return MakeProjection() * MakeViewMatrix(); }
+
+		inline pos2d ScreenCrdsToAbs(pos2d pos) {
+			glm::vec4 a = glm::vec4(pos.x, pos.y, 0.f, 0.f) / MakePV();
+			return { static_cast<int>(a.x), static_cast<int>(a.y) };
+		}
+	};
+}
 //#include <window.h>
 /*class Camera {
 public:
@@ -9,20 +177,20 @@ public:
 	}
 };*/
 
-float fb_quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+//float fb_quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
     // positions   // texCoords
-    -1,  1,        0, 1,
-    -1, -1,        0, 0,
-     1, -1,        1, 0,
+//    -1,  1,        0, 1,
+//    -1, -1,        0, 0,
+//     1, -1,        1, 0,
 
-    -1,  1,        0, 1,
-     1, -1,        1, 0,
-     1,  1,        1, 1
-};
+//    -1,  1,        0, 1,
+//     1, -1,        1, 0,
+//     1,  1,        1, 1
+//};
 
-string default_fb_shader_v = "#version 330 core\nlayout(location = 0) in vec2 aPos;\nlayout(location = 1) in vec2 aTexCoords;\nout vec2 TexCoords;\nvoid main() {\ngl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);\nTexCoords = aTexCoords;\n}";
-string default_fb_shader_f = "#version 330 core\nout vec4 FragColor;\nin vec2 TexCoords;\nuniform sampler2D screenTexture;\nvoid main() {\nFragColor = texture(screenTexture, TexCoords);\n};";
-
+//string default_fb_shader_v = "#version 330 core\nlayout(location = 0) in vec2 aPos;\nlayout(location = 1) in vec2 aTexCoords;\nout vec2 TexCoords;\nvoid main() {\ngl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);\nTexCoords = aTexCoords;\n}";
+//string default_fb_shader_f = "#version 330 core\nout vec4 FragColor;\nin vec2 TexCoords;\nuniform sampler2D screenTexture;\nvoid main() {\nFragColor = texture(screenTexture, TexCoords);\n};";
+/*
 class FramebufferObject {
 public:
     pos2d fb_size;
@@ -103,7 +271,6 @@ public:
         glClear(GL_COLOR_BUFFER_BIT);
     }
 
-    /*
     void render(pos2d window_size) {
         glViewport(0, 0, window_size.x, window_size.y);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -115,11 +282,11 @@ public:
         glBindTexture(GL_TEXTURE_2D, texture_id);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
-    }*/
+    }
 
 private: unsigned int quadVAO, quadVBO;
-};
-
+};*/
+/*
 class cam2d{
 public:
     //mwindow *w;
@@ -148,7 +315,7 @@ public:
         old_zoom = zoom;
 
         //cout << center.x << " " << center.y << endl;
-        /*float deltazoom = old_zoom - zoom;
+        float deltazoom = old_zoom - zoom;
 
         if (deltazoom != 0) {
             cout << zoom << endl;
@@ -163,7 +330,7 @@ public:
         }
         else {
             old_zoom = zoom;
-        }*/
+        }
         glm::mat4 view = glm::mat4(1.0f);
         view = glm::scale(view, glm::vec3(zoom, zoom, 1.0f));
         view = glm::translate(view, glm::vec3(-center.x, -center.y, 0.0f));
@@ -171,7 +338,7 @@ public:
         return view;
     }
 private: float old_zoom = 1;
-};
+};*/
 
 
 /*

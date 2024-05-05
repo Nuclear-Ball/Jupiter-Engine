@@ -1,51 +1,62 @@
 #pragma once
 #include <glad/glad.h>
 
-namespace QuadData {
-	const float vertices[] = {
-		1, 1, // top right
-		1, 0, // bottom right
-		0, 0, // bottom left
-		0, 1, // top left 
-	};
-	const unsigned int indices[] = {  // note that we start from 0!
-		0, 1, 3,  // first Triangle
-		1, 2, 3   // second Triangle
+
+namespace JE {
+	namespace QuadData {
+		const float vertices[] = {
+			1, 1, // top right
+			1, 0, // bottom right
+			0, 0, // bottom left
+			0, 1, // top left 
+		};
+		const unsigned int indices[] = {  // note that we start from 0!
+			0, 1, 3,  // first Triangle
+			1, 2, 3   // second Triangle
+		};
+	}
+
+	class Quad {
+	private:
+		unsigned int vao = 0;
+		unsigned int vbo = 0;
+		unsigned int ebo = 0;
+	public:
+		Quad(bool) {}
+
+		void Init() {
+			glGenVertexArrays(1, &vao);
+			glGenBuffers(1, &vbo);
+			glGenBuffers(1, &ebo);
+
+			glBindVertexArray(vao);
+
+			glBindBuffer(GL_ARRAY_BUFFER, vbo);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(QuadData::vertices), QuadData::vertices, GL_STATIC_DRAW);
+
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(QuadData::indices), QuadData::indices, GL_STATIC_DRAW);
+
+			glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 2, reinterpret_cast<void*>(0));
+			glEnableVertexAttribArray(0);
+		}
+
+		inline Quad() {
+			Init();
+		}
+
+		inline ~Quad() {
+			glDeleteVertexArrays(1, &vao);
+			glDeleteBuffers(1, &vbo);
+			glDeleteBuffers(1, &ebo);
+		}
+
+		inline unsigned int Handle() const
+		{
+			return vao;
+		}
 	};
 }
-
-class Quad {
-private:
-	unsigned int vao = 0;
-	unsigned int vbo = 0;
-	unsigned int ebo = 0;
-public:
-	Quad() {
-		glGenVertexArrays(1, &vao);
-		glGenBuffers(1, &vbo);
-		glGenBuffers(1, &ebo);
-
-		glBindVertexArray(vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(QuadData::vertices), QuadData::vertices, GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(QuadData::indices), QuadData::indices, GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(float) * 2, reinterpret_cast<void*>(0));
-		glEnableVertexAttribArray(0);
-	}
-
-	inline ~Quad() {
-		glDeleteVertexArrays(1, &vao);
-		glDeleteBuffers(1, &vbo);
-		glDeleteBuffers(1, &ebo);
-	}
-
-	inline unsigned int Handle() const
-		{ return vao; }
-};
 
 //#include <pos2d.h>
 //#include <iostream>

@@ -80,12 +80,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)lib\glfw-3.3.8.bin.WIN64\include;$(SolutionDir)imgui;$(SolutionDir)lib\glm\glm;$(ProjectDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)lib\glfw-3.3.8.bin.WIN64\include;$(SolutionDir)imgui;$(SolutionDir)lib\glm;$(ProjectDir);$(IncludePath)</IncludePath>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)lib\glfw-3.3.8.bin.WIN64\include;$(SolutionDir)imgui;$(SolutionDir)lib\glm\glm;$(ProjectDir);D:\bruh\vcpkg\vcpkg\packages\flatbuffers_x86-windows\include;C:\Users\alexa\source\repos\Jupiter Engine g. v\lib\box2d\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)lib\glfw-3.3.8.bin.WIN64\include;$(SolutionDir)imgui;$(SolutionDir)lib\glm;$(ProjectDir);D:\bruh\vcpkg\vcpkg\packages\flatbuffers_x86-windows\include;C:\Users\alexa\source\repos\Jupiter Engine g. v\lib\box2d\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\alexa\source\repos\Jupiter Engine g. v\lib\box2d;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -164,15 +164,14 @@
     <ClInclude Include="camera.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="core.h" />
+    <ClInclude Include="Cosmonator.h" />
     <ClInclude Include="editor.h" />
-    <ClInclude Include="Input.h" />
-    <ClInclude Include="jwrapp.h" />
     <ClInclude Include="my_img.h" />
     <ClInclude Include="pos2d.h" />
-    <ClInclude Include="random_opengl_boilerplate.h" />
+    <ClInclude Include="Quad.h" />
     <ClInclude Include="shader.h" />
-    <ClInclude Include="objects.h" />
-    <ClInclude Include="texture.h" />
+    <ClInclude Include="EngineStructs.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Tilemap.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
@@ -186,7 +185,6 @@
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\imgui\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="..\lib\glad\src\glad.c" />
-    <ClCompile Include="editor.cpp" />
     <ClCompile Include="player.cpp" />
     <ClCompile Include="stb.cpp" />
   </ItemGroup>

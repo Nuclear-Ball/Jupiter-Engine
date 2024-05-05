@@ -2,8 +2,9 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <imgui_internal.h>
 #include <pos2d.h>
-#include <camera.h>
+//#include <camera.h>
 #include <pfd.h>
 
 class mimg {
@@ -13,7 +14,7 @@ public:
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
     ImGuiViewport* viewport;
 
-	void init(GLFWwindow* window, string fontdata) {
+	void Init(GLFWwindow* window, const std::string& fontdata) {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         io = &ImGui::GetIO();
@@ -23,45 +24,40 @@ public:
         //io.Fonts->AddFontDefault();
 
 		void* data = malloc(fontdata.size());
-		memcpy(data, fontdata.c_str(), fontdata.size());
 
-		io->Fonts->AddFontFromMemoryTTF(data, (int)fontdata.size(), 20, NULL, io->Fonts->GetGlyphRangesCyrillic());
+		if(data != NULL)
+			memcpy(data, fontdata.c_str(), fontdata.size());
+
+		io->Fonts->AddFontFromMemoryTTF(data, static_cast<int>(fontdata.size()), 20, nullptr, io->Fonts->GetGlyphRangesCyrillic());
 
         //io->Fonts->AddFontFromFileTTF("OpenSans-Regular.ttf", 20, (const ImFontConfig*)0, io->Fonts->GetGlyphRangesCyrillic());
-
+		io->ConfigWindowsMoveFromTitleBarOnly = 1;
+		io->IniFilename = nullptr;
 
         // Setup Platform/Renderer backends
         ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
         ImGui_ImplOpenGL3_Init();
 	}
 
-    void update() {
+    void Start() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
-        viewport = ImGui::GetMainViewport();
-
-        ImGui::SetNextWindowPos(viewport->Pos);
-        ImGui::SetNextWindowSize(viewport->Size);
-        ImGui::SetNextWindowViewport(viewport->ID);
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        window_flags |= ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove;
-        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_MenuBar;
-
-        if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-            window_flags |= ImGuiWindowFlags_NoBackground;
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(1.0f, 0.0f));
-        ImGui::Begin("Root", nullptr, window_flags);
-        ImGui::PopStyleVar();
-        ImGui::PopStyleVar(2);
-        
     }
+
+	void End() {
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+
+	~mimg() {
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+	}
 };
 
+/*
 pos2d get_mouse_pos_inside_widget(pos2d global_mouse_pos, pos2d winsize) {
     pos2d mspos = { global_mouse_pos.x - int(ImGui::GetWindowPos().x) - int(ImGui::GetContentRegionMax().x - winsize.x), 
 					global_mouse_pos.y - int(ImGui::GetWindowPos().y) - int(ImGui::GetContentRegionMax().y - winsize.y) };
@@ -90,8 +86,9 @@ public:
         ImGui::Image(ImTextureID(fb->texture_id), ImVec2(winsize.x, winsize.y), ImVec2(0, 1), ImVec2(1, 0)); //главное окно
         is_hovered = ImGui::IsItemHovered();
     }
-};
+};*/
 
+/*
 namespace Popups {
 
 	//Ёкспорт
@@ -257,4 +254,4 @@ namespace Popups {
 
 		return !is_opened;
 	}
-}
+}*/

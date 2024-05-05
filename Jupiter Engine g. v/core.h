@@ -3,113 +3,165 @@
 #include <fstream>
 #include <vector>
 
-#include <glm.hpp>
-#include <gtc/matrix_transform.hpp>
-#include <gtc/type_ptr.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <stb_image.h>
 
+#include "EngineStructs.h"
+#include "camera.h"
 #include "shader.h"
 #include "pos2d.h"
-#include "texture.h"
-#include "random_opengl_boilerplate.h"
+#include "Texture.h"
+#include "Quad.h"
 #include "Tilemap.h"
 #include "Common.h"
 
 
-namespace JupiterEngine {
-	const Quad qd;
+namespace JE {
+	void NewFrame() {
+		double currentFrame = glfwGetTime();
+		Commons::delta_time = currentFrame - Commons::last_frame;
+		Commons::last_frame = currentFrame;
+		Commons::fps = 1 / Commons::delta_time;
 
-	const JShader txt_sh(texture_shader_v, texture_shader_f);
-	const JShader flat_sh(flatcolor_shader_v, flatcolor_shader_f);
+		Commons::frame_counter++;
+	}
 
-	const JTexture::BasicTexture error_texture(JTexture::ErrorFrames::frame_0, {16, 16});
-	JTexture::BasicTexture coords_start;
+	namespace Internals {
+		class EngineRes {
+		private:
+			JE::Quad qd = JE::Quad(false);
+
+			JShader txt_sh;
+			JShader flat_sh;
+			JShader framebuffer_sh;
+
+			JE::JTexture::BasicTexture error_texture = JE::JTexture::BasicTexture(false);
+			//JTexture::BasicTexture coords_start = JTexture::BasicTexture(false);
+		public:
+			void Init() {
+				qd.Init();
+				txt_sh.Load(common_vs, texture_shader_f);
+				flat_sh.Load(common_vs, flatcolor_shader_f);
+				framebuffer_sh.Load(default_fb_shader_v, default_fb_shader_f);
+
+				error_texture.Init();
+				error_texture.LoadRaw(JE::JTexture::ErrorFrames::frame_0, { 16, 16 });
+			}
+
+			inline const JE::Quad& Qd()
+				{ return qd; }
+
+			inline const JShader& TxtSh()
+				{ return txt_sh; }
+			inline const JShader& FlatSh()
+				{ return flat_sh; }
+			inline const JShader& FbSh()
+				{ return framebuffer_sh; }
+
+			inline const JE::JTexture::BasicTexture& ErrTxt()
+				{ return error_texture; }
+		};
+	}
+
+	Internals::EngineRes res;
 	
 	namespace Draw {
+
 		inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::Properties& props = {}) {
-			glm::mat4 model = glm::translate(model, glm::vec3(pos.x + props.offset.x, pos.y + props.offset.y, 0.0f));
-			model = glm::translate(model, glm::vec3(props.rotation_origin.x, props.rotation_origin.y, 0.0f));
+			glm::mat4 model = glm::translate(model, glm::vec3(pos.x + props.origin.x, pos.y + props.origin.y, 0.0f));
+			model = glm::translate(model, glm::vec3(props.origin.x, props.origin.y, 0.0f));
 			model = glm::rotate(model, glm::radians(props.rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-			model = glm::translate(model, glm::vec3(-props.rotation_origin.x, -props.rotation_origin.y, 0.0f));
+			model = glm::translate(model, glm::vec3(-props.origin.x, -props.origin.y, 0.0f));
 			model = glm::scale(model, glm::vec3(texture_size.x * props.scale.x, texture_size.y * props.scale.y, 1.0f));
 
 			return model;
 		}
+		/*
+		inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::Properties& props = {}) {
+			glm::mat4 model = props.Matrix();
+
+			model = glm::translate(model, glm::vec3(pos.x, pos.y, 0.f));
+			model = glm::scale(model, glm::vec3(texture_size.x, texture_size.y, 1.f));
+
+			return model;
+		}*/
 
 		void BTexture(const JTexture::BasicTexture& txt, pos2d pos, const JTexture::Frame::Properties& props = {}) {
 			glm::mat4 model = MakeMatrix({ static_cast<float>(pos.x), static_cast<float>(pos.y) }, txt.GetSize(), props);
 
-			txt_sh.Use();
-			txt_sh.setMat4("model", model);
-			txt_sh.setFloat("transparency", 1.0f - props.transparency);
+			res.TxtSh().Use();
+			res.TxtSh().setMat4("model", model);
+			res.TxtSh().setFloat("transparency", 1.0f - props.transparency);
+
 			txt.Use();
-			glBindVertexArray(qd.Handle());
+			glBindVertexArray(res.Qd().Handle());
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-			txt_sh.setFloat("transparency", 0);
 		}
 		void Texture(const JTexture::Texture& txt, pos2d pos, JTexture::Frame::Properties props = {}) {
-			
 			const JTexture::Frame& c_frame = txt.GetCurrentFrame();
 			const JTexture::Frame::Properties& frame_props = c_frame.properties;
 
 			glm::mat4 model = MakeMatrix({ static_cast<float>(pos.x), static_cast<float>(pos.y) }, c_frame.frame.GetSize(), 
 			{ 1, frame_props.rotation + props.rotation, {frame_props.scale.x + props.scale.x, frame_props.scale.y + props.scale.y}, 
-			{frame_props.rotation_origin.x + props.rotation_origin.x, frame_props.rotation_origin.y + props.rotation_origin.y}, 
-			{frame_props.offset.x + props.offset.x, frame_props.offset.y + props.offset.y} });
+			{frame_props.origin.x + props.origin.x, frame_props.origin.y + props.origin.y} });
 
-			txt_sh.Use();
-			txt_sh.setMat4("model", model);
-			txt_sh.setFloat("transparency", 1.0f - (frame_props.transparency - (1.0f - props.transparency)));
+			res.TxtSh().Use();
+			res.TxtSh().setMat4("model", model);
+			res.TxtSh().setFloat("transparency", 1.0f - (frame_props.transparency - (1.0f - props.transparency)));
+
 			c_frame.frame.Use();
-			glBindVertexArray(qd.Handle());
+			glBindVertexArray(res.Qd().Handle());
 			glDrawArrays(GL_TRIANGLES, 0, 6);
-			txt_sh.setFloat("transparency", 0);
 		}
 
-		void Line(pos2d start, pos2d end, int thickness = 1, rgb color = { 255, 255, 255 }) {
-			flat_sh.Use();
-
+		void Line(pos2d start, pos2d end, int thickness = 1, rgb color = { 255, 255, 255, 255 }) {
 			const int ct_x = (end.x - start.x), ct_y = (end.y - start.y);  //Катеты прямоугольного треугольника с вершинами в данных 2х точках 
 			const float l = std::sqrt(std::pow(ct_x, 2) + std::pow(ct_y, 2)); //Гипотенуза
 			const float ct_sin = static_cast<float>(ct_x) / l;  //Синус угла при начальной вершине
 			constexpr double pi = 3.14159265358979323846;
 			const float rotation = std::asinf(ct_sin) * (ct_y >= 0 ? 1 : -1) - (pi / 2) + (ct_y >= 0 ? 0 : pi);  //Угол вращения прямоугольника. Фактически тут мы находим угол направления гипотенузы в пространстве.
 
+			const float offset = static_cast<float>(thickness) / 2;
+
 			glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3(static_cast<float>(start.x), static_cast<float>(start.y), 0.0f)); //Перенос к началу
 
-			model = glm::translate(model, glm::vec3(static_cast<float>(thickness) / 2.0f, static_cast<float>(thickness) / 2.0f, 0.0));  //Тут задается центр вращения
+			//model = glm::translate(model, glm::vec3(offset, offset, 0.0));  //Тут задается центр вращения
 			model = glm::rotate(model, -rotation, glm::vec3(0.0f, 0.0f, 1.0f));	 //Само вращение
-			model = glm::translate(model, glm::vec3(-0.5, -0.5, 0.0));  //Конец центра вращения
-			model = glm::scale(model, glm::vec3((l + thickness), static_cast<float>(thickness), 1.0f)); //Тот прямоугольник растягивается под длину линии
+			model = glm::translate(model, glm::vec3(-offset, -offset, 0.0));  //Конец центра вращения
+			model = glm::scale(model, glm::vec3(l + thickness, static_cast<float>(thickness), 1.0f)); //Тот прямоугольник растягивается под длину линии
 
 			//Рендер
-			flat_sh.setMat4("model", model);
-			flat_sh.setVec4("flat_color", glm::vec4(0.00390625f * static_cast<float>(color.r), 0.00390625f * static_cast<float>(color.g), 0.00390625f * static_cast<float>(color.b), 1.0));
-			glBindVertexArray(qd.Handle());
+			res.FlatSh().Use();
+			res.FlatSh().setMat4("model", model);
+			res.FlatSh().setVec4("flat_color", glm::vec4(0.00390625f * static_cast<float>(color.r), 0.00390625f * static_cast<float>(color.g), 0.00390625f * static_cast<float>(color.b), 1.0));
+
+			glBindVertexArray(res.Qd().Handle());
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		}
 		void Line(pos2df start, pos2df end, int thickness = 1, rgb color = { 255, 255, 255 }) {
-			flat_sh.Use();
-
 			const float ct_x = (end.x - start.x), ct_y = (end.y - start.y);  //Катеты прямоугольного треугольника с вершинами в данных 2х точках 
 			const float l = std::sqrt(std::pow(ct_x, 2) + std::pow(ct_y, 2)); //Гипотенуза
 			const float ct_sin = ct_x / l;  //Синус угла при начальной вершине
 			constexpr double pi = 3.14159265358979323846;
 			const float rotation = std::asinf(ct_sin) * (ct_y >= 0 ? 1 : -1) - (pi / 2) + (ct_y >= 0 ? 0 : pi);  //Угол вращения прямоугольника. Фактически тут мы находим угол направления гипотенузы в пространстве.
 
+			const float offset = static_cast<float>(thickness) / 2;
+
 			glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3(start.x, start.y, 0.0f)); //Перенос к началу
 
-			model = glm::translate(model, glm::vec3(thickness / 2.0f, thickness / 2.0f, 0.0));  //Тут задается центр вращения
+			//model = glm::translate(model, glm::vec3(offset, offset, 0.0));  //Тут задается центр вращения
 			model = glm::rotate(model, -rotation, glm::vec3(0.0f, 0.0f, 1.0f));	 //Само вращение
-			model = glm::translate(model, glm::vec3(-0.5, -0.5, 0.0));  //Конец центра вращения
-
-			//Тот прямоугольник растягивается под длину линии
-			model = glm::scale(model, glm::vec3((l + thickness), thickness, 1.0f));
+			model = glm::translate(model, glm::vec3(-offset, -offset, 0.0));  //Конец центра вращения
+			model = glm::scale(model, glm::vec3(l + thickness, thickness, 1.0f)); //Тот прямоугольник растягивается под длину линии
 
 			//Рендер
-			flat_sh.setMat4("model", model);
-			flat_sh.setVec4("flat_color", glm::vec4(0.00390625f * static_cast<float>(color.r), 0.00390625f * static_cast<float>(color.g), 0.00390625f * static_cast<float>(color.b), 1.0));
-			glBindVertexArray(qd.Handle());
+			res.FlatSh().Use();
+			res.FlatSh().setMat4("model", model);
+			res.FlatSh().setVec4("flat_color", glm::vec4(0.00390625f * static_cast<float>(color.r), 0.00390625f * static_cast<float>(color.g), 0.00390625f * static_cast<float>(color.b), 1.0));
+
+			glBindVertexArray(res.Qd().Handle());
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		}
 
@@ -149,9 +201,25 @@ namespace JupiterEngine {
 			pos1 = pos2, pos2 = { start.x, start.y };
 			Line(pos1, pos2);
 		}
+
+		void DisplayFramebuffer(const Framebuffer& frm, const GlfwEnv::JWindow& win) {
+			//win.Bind();
+			frm.Use();
+			res.FbSh().Use();
+			glBindVertexArray(res.Qd().Handle());
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+			//frm.Bind();
+		}
 	}
 
+	class Core {
+	public:
+		WorldTypes::Project gamedata;
 
+		void Render(Camera& cam) {
+
+		}
+	};
 }
 
 //pos2d c_tile_pos = { tile_pos.x * c_layer.tmap.grid_size.x + (c_texture.original_size.x * c_texture.scale.x) / 2 + c_texture.offset.x,
