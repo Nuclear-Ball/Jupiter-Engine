@@ -20,18 +20,21 @@ int main() {
 	unsigned short map[16 * 16];
 	memset(map, 1, 16 * 16 * sizeof(unsigned short));
 
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	while (win.Check()) {
-		//a.Bind();
-		
 		win.Start();
-		glViewport(0, 0, 256, 300);
-		glm::mat4 projection = glm::ortho<float>(0, 300, 0, 256);
+		win.Bind();
+		//glViewport(0, 0, 256, 300);
+		glm::mat4 projection = glm::ortho<float>(0, static_cast<float>(win.GetSize().x) * (256.f / win.GetSize().y), 0, 256);
 		JE::res.TxtSh().Use();
 		JE::res.TxtSh().setMat4("pv", projection);
 
-		glClear(GL_COLOR_BUFFER_BIT);
+		//glClear(GL_COLOR_BUFFER_BIT);
 
-		//JE::Draw::DisplayFramebuffer(a, win);
+		JE::Draw::DisplayFramebuffer(a, win);
 
 		for (int i = 0; i < 16; i++) {
 			for (int j = 0; j < 16; j++) {

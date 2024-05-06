@@ -68,8 +68,7 @@ namespace JE {
 	Internals::EngineRes res;
 	
 	namespace Draw {
-
-		inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::Properties& props = {}) {
+		/*inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::Properties& props = {}) {
 			glm::mat4 model = glm::translate(model, glm::vec3(pos.x + props.origin.x, pos.y + props.origin.y, 0.0f));
 			model = glm::translate(model, glm::vec3(props.origin.x, props.origin.y, 0.0f));
 			model = glm::rotate(model, glm::radians(props.rotation), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -77,20 +76,19 @@ namespace JE {
 			model = glm::scale(model, glm::vec3(texture_size.x * props.scale.x, texture_size.y * props.scale.y, 1.0f));
 
 			return model;
-		}
-		/*
+		}*/
+		
 		inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::Properties& props = {}) {
-			glm::mat4 model = props.Matrix();
-
-			model = glm::translate(model, glm::vec3(pos.x, pos.y, 0.f));
+			glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3(pos.x, pos.y, 0.f));
+			model = props.Matrix(model);
 			model = glm::scale(model, glm::vec3(texture_size.x, texture_size.y, 1.f));
 
 			return model;
-		}*/
+		}
 
 		void BTexture(const JTexture::BasicTexture& txt, pos2d pos, const JTexture::Frame::Properties& props = {}) {
 			glm::mat4 model = MakeMatrix({ static_cast<float>(pos.x), static_cast<float>(pos.y) }, txt.GetSize(), props);
-
+			glm::vec4 test = glm::vec4(1.f, 1.f, 0.f, 0.f) * model;
 			res.TxtSh().Use();
 			res.TxtSh().setMat4("model", model);
 			res.TxtSh().setFloat("transparency", 1.0f - props.transparency);
@@ -203,7 +201,7 @@ namespace JE {
 		}
 
 		void DisplayFramebuffer(const Framebuffer& frm, const GlfwEnv::JWindow& win) {
-			//win.Bind();
+			win.Bind();
 			frm.Use();
 			res.FbSh().Use();
 			glBindVertexArray(res.Qd().Handle());

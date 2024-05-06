@@ -195,7 +195,7 @@ namespace GlfwEnv {
 
 			mouse.Create(handle);
 		}
-		void Focus() {
+		inline void Focus() {
 			glfwMakeContextCurrent(handle);
 			glfwFocusWindow(handle);
 		}
@@ -230,9 +230,12 @@ namespace GlfwEnv {
 			glfwPollEvents();
 		}
 
-		void Iconify();
-		void Maximize();
-		void Restore();
+		inline void Iconify() 
+			{ glfwIconifyWindow(handle); }
+		inline void Maximize() 
+			{ glfwMaximizeWindow(handle); }
+		inline void Restore() 
+			{ glfwRestoreWindow(handle); }
 
 		void SetFullscreenMode(bool mode) {
 			is_fullscreened = mode;
@@ -247,10 +250,16 @@ namespace GlfwEnv {
 		}
 		inline void SetVsyncMode(bool mode)
 			{ glfwSwapInterval(vsync = mode); }
-		void SetIcon(const std::string& data, pos2dus icon_size);
-		void SetTitle(const std::string& title);
-		void SetSize(pos2dus new_size);
-		void SetPos(pos2ds new_pos);
+		inline void SetIcon(const std::string& data, pos2dus icon_size) {
+			const GLFWimage tmp = { icon_size.x, icon_size.y, reinterpret_cast<unsigned char*>(const_cast<char*>(data.c_str())) };
+			glfwSetWindowIcon(handle, 1, &tmp);
+		}
+		inline void SetTitle(const std::string& title) const 
+			{ glfwSetWindowTitle(handle, title.c_str()); }
+		inline void SetSize(pos2dus new_size) 
+			{ glfwSetWindowSize(handle, new_size.x, new_size.y); }
+		inline void SetPos(pos2ds new_pos) 
+			{ glfwSetWindowPos(handle, new_pos.x, new_pos.y); }
 
 		inline void Bind() const {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -274,9 +283,15 @@ namespace GlfwEnv {
 		
 		inline bool Check() const 
 			{ return !glfwWindowShouldClose(handle); }
-		void Close();
-		void Destroy();
-		~JWindow();
+		inline void Close()
+			{ glfwSetWindowShouldClose(handle, 1); }
+		inline void Destroy() 
+			{ this->~JWindow(); }
+		inline ~JWindow() {
+			glfwDestroyWindow(handle);
+			if (!--window_instances)
+				glfwTerminate();
+		}
 
 	protected:
 		GLFWwindow* handle = nullptr;
@@ -293,33 +308,4 @@ namespace GlfwEnv {
 		double last_frame = 0.0;
 		double fps = 0.0;
 	};
-	inline void JWindow::Close() 
-		{ glfwSetWindowShouldClose(handle, 1); }
-	inline void JWindow::Destroy() {
-		glfwDestroyWindow(handle);
-		--window_instances;
-	}
-	inline void JWindow::Iconify() 
-		{ glfwIconifyWindow(handle); }
-	inline void JWindow::Maximize()
-		{ glfwMaximizeWindow(handle); }
-	inline void JWindow::Restore()
-		{ glfwRestoreWindow(handle); }
-	inline JWindow::~JWindow() {
-		glfwDestroyWindow(handle);
-		if (!--window_instances)
-			glfwTerminate();
-	}
-
-	inline void JWindow::SetIcon(const std::string& data, pos2dus size) {
-		GLFWimage tmp = { size.x, size.y, reinterpret_cast<unsigned char*>(const_cast<char*>(data.c_str())) };
-		glfwSetWindowIcon(handle, 1, &tmp);
-	}
-	inline void JWindow::SetSize(pos2dus new_size)
-		{ glfwSetWindowSize(handle, new_size.x, new_size.y); }
-	inline void JWindow::SetPos(pos2ds new_size)
-		{ glfwSetWindowPos(handle, new_size.x, new_size.y); }
-
-	inline void JWindow::SetTitle(const std::string& title)
-		{ glfwSetWindowTitle(handle, title.c_str()); }
 }
