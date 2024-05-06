@@ -44,7 +44,7 @@ namespace JE {
 				qd.Init();
 				txt_sh.Load(common_vs, texture_shader_f);
 				flat_sh.Load(common_vs, flatcolor_shader_f);
-				framebuffer_sh.Load(default_fb_shader_v, default_fb_shader_f);
+				framebuffer_sh.Load(fb_shader_v, fb_shader_f);
 
 				error_texture.Init();
 				error_texture.LoadRaw(JE::JTexture::ErrorFrames::frame_0, { 16, 16 });
@@ -200,8 +200,9 @@ namespace JE {
 			Line(pos1, pos2);
 		}
 
-		void DisplayFramebuffer(const Framebuffer& frm, const GlfwEnv::JWindow& win) {
+		void DisplayFramebuffer(const JTexture::BasicTexture& frm, const GlfwEnv::JWindow& win) {
 			win.Bind();
+
 			frm.Use();
 			res.FbSh().Use();
 			glBindVertexArray(res.Qd().Handle());

@@ -15,7 +15,9 @@ int main() {
 	JE::JTexture::BasicTexture player;
 	player.Deserialize(data.ReadType<std::string>("player sprite"));
 
-	JE::Framebuffer a(JE::res.ErrTxt());
+	//JE::Framebuffer a(JE::res.ErrTxt());
+	
+	JE::Camera cam;
 
 	unsigned short map[16 * 16];
 	memset(map, 1, 16 * 16 * sizeof(unsigned short));
@@ -26,7 +28,9 @@ int main() {
 
 	while (win.Check()) {
 		win.Start();
-		win.Bind();
+
+		cam.frm.Resize({ static_cast<unsigned short>(static_cast<float>(win.GetSize().x) * (256.f / win.GetSize().y)), 256 });
+		cam.frm.Bind();
 		//glViewport(0, 0, 256, 300);
 		glm::mat4 projection = glm::ortho<float>(0, static_cast<float>(win.GetSize().x) * (256.f / win.GetSize().y), 0, 256);
 		JE::res.TxtSh().Use();
@@ -34,7 +38,7 @@ int main() {
 
 		//glClear(GL_COLOR_BUFFER_BIT);
 
-		JE::Draw::DisplayFramebuffer(a, win);
+		
 
 		for (int i = 0; i < 16; i++) {
 			for (int j = 0; j < 16; j++) {
@@ -46,8 +50,8 @@ int main() {
 
 		static pos2d player_pos = { 16, 32 };
 		JE::Draw::BTexture(player, player_pos);
-		//std::string res = a.GetBinary();
-		//JE::Draw::DisplayFramebuffer(a, win);
+
+		JE::Draw::DisplayFramebuffer(cam.frm, win);
 		win.End();
 	}
 }

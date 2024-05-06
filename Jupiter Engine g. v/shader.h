@@ -48,7 +48,6 @@ const std::string texture_shader_f = "#version 330 core\n"
 const std::string flatcolor_shader_f = "#version 330 core\n"
 
 									   "out vec4 FragColor;\n"
-									   "in vec2 TexCoord;\n"
 
 									   "uniform vec4 flat_color;\n"
 

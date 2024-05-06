@@ -2,21 +2,26 @@
 #include <glad/glad.h>
 #include "Texture.h"
 namespace JE {
-	const std::string default_fb_shader_v = "#version 330 core\n"
-											"layout(location = 0) in vec2 aPos;\n"
-											"out vec2 TexCoords;\n"
-											"void main() {\n"
-												"gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);\n"
-												"TexCoords = aPos;\n"
-											"}";
+	const std::string fb_shader_v = "#version 330 core\n"
+									"layout(location = 0) in vec2 aPos;\n"
+									"out vec2 TexCoord;\n"
+									"void main() {\n"
+										"gl_Position = vec4((aPos.x - 0.5) * 2, (aPos.y - 0.5) * 2, 0.0, 1.0);\n"
+										"TexCoord = aPos;\n"
+									"}";
 
-	const std::string default_fb_shader_f = "#version 330 core\n"
-											"out vec4 FragColor;\n"
-											"in vec2 TexCoords;\n"
-											"uniform sampler2D screenTexture;\n"
-											"void main() {\n"
-												"FragColor = texture(screenTexture, TexCoords);\n"
-											"};";
+	const std::string fb_shader_f = "#version 330 core\n"
+
+										"out vec4 FragColor;\n"
+										"in vec2 TexCoord;\n"
+
+										"uniform float transparency;\n"
+										"uniform sampler2D ourTexture;\n"
+
+										"void main(){\n"
+											"vec4 color = texture(ourTexture, TexCoord);\n"
+											"FragColor = vec4(color.rgb, color.a - transparency);\n"
+										"}";
 
 	class Framebuffer : public JTexture::BasicTexture {
 	private:
@@ -62,18 +67,18 @@ namespace JE {
 
 		inline Framebuffer(const Framebuffer& cpy) : BasicTexture(0) {
 			Init();
-			this->LoadRaw(cpy.GetBinary(), size);
+			this->LoadRaw(cpy.GetBinary(), cpy.GetSize());
 		}
 		inline Framebuffer(const BasicTexture& cpy) : BasicTexture(0) {
 			Init();
-			this->LoadRaw(cpy.GetBinary(), size);
+			this->LoadRaw(cpy.GetBinary(), cpy.GetSize());
 		}
 		Framebuffer& operator=(const Framebuffer& cpy) {
-			this->LoadRaw(cpy.GetBinary(), size);
+			this->LoadRaw(cpy.GetBinary(), cpy.GetSize());
 			return *this;
 		}
 		Framebuffer& operator=(const BasicTexture& cpy) {
-			this->LoadRaw(cpy.GetBinary(), size);
+			this->LoadRaw(cpy.GetBinary(), cpy.GetSize());
 			return *this;
 		}
 
