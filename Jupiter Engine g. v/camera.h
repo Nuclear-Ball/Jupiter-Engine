@@ -12,16 +12,16 @@ namespace JE {
 
 	const std::string fb_shader_f = "#version 330 core\n"
 
-										"out vec4 FragColor;\n"
-										"in vec2 TexCoord;\n"
+									"out vec4 FragColor;\n"
+									"in vec2 TexCoord;\n"
 
-										"uniform float transparency;\n"
-										"uniform sampler2D ourTexture;\n"
+									"uniform float transparency;\n"
+									"uniform sampler2D ourTexture;\n"
 
-										"void main(){\n"
-											"vec4 color = texture(ourTexture, TexCoord);\n"
-											"FragColor = vec4(color.rgb, color.a - transparency);\n"
-										"}";
+									"void main(){\n"
+										"vec4 color = texture(ourTexture, TexCoord);\n"
+										"FragColor = vec4(color.rgb, color.a - transparency);\n"
+									"}";
 
 	class Framebuffer : public JTexture::BasicTexture {
 	private:
@@ -157,8 +157,7 @@ namespace JE {
 			{ frm.Init(); }
 
 		inline glm::mat4 MakeViewMatrix() const {
-			glm::mat4 view = props.Matrix();
-			view = glm::translate(view, glm::vec3(center_pos.x - (static_cast<float>(frm.GetSize().x) / 2.f), center_pos.y - (static_cast<float>(frm.GetSize().y) / 2.f), 0.f));
+			glm::mat4 view = props.Matrix(glm::translate(glm::mat4(1), glm::vec3(center_pos.x + (static_cast<float>(frm.GetSize().x) / 2.f), center_pos.y + (static_cast<float>(frm.GetSize().y) / 2.f), 0.f)));
 			return view;
 		}
 		inline glm::mat4 MakeProjection() const 
@@ -167,8 +166,9 @@ namespace JE {
 			{ return MakeProjection() * MakeViewMatrix(); }
 
 		inline pos2d ScreenCrdsToAbs(pos2d pos) {
-			glm::vec4 a = glm::vec4(pos.x, pos.y, 0.f, 0.f) / MakePV();
-			return { static_cast<int>(a.x), static_cast<int>(a.y) };
+			const glm::vec4 a = glm::vec4(pos.x - (frm.GetSize().x / 2.f), -(pos.y - (frm.GetSize().y / 2.f)), 0.f, 0.f);
+			const glm::vec4 res = a * MakeViewMatrix();
+			return { static_cast<int>(res.x), static_cast<int>(res.y) };
 		}
 	};
 }

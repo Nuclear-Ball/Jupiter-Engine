@@ -360,8 +360,8 @@ namespace JE {
 				bounce
 			};
 
-			Type type;
-			Direction direction;
+			Type type = Type::stop_when_end;
+			Direction direction = Direction::normal;
 			std::string name = u8"Без имени";
 			unsigned short in_editor_ever_created = 0;
 
