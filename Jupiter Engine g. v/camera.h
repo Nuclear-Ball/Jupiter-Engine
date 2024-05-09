@@ -157,17 +157,21 @@ namespace JE {
 			{ frm.Init(); }
 
 		inline glm::mat4 MakeViewMatrix() const {
-			glm::mat4 view = props.Matrix(glm::translate(glm::mat4(1), glm::vec3(center_pos.x + (static_cast<float>(frm.GetSize().x) / 2.f), center_pos.y + (static_cast<float>(frm.GetSize().y) / 2.f), 0.f)));
+			glm::mat4 view = props.Matrix(glm::translate(glm::mat4(1), glm::vec3(static_cast<float>(frm.GetSize().x) / 2.f, static_cast<float>(frm.GetSize().y) / 2.f, 0.f)));
+			view = glm::translate(view, glm::vec3(-center_pos.x, center_pos.y, 0.f));
 			return view;
 		}
-		inline glm::mat4 MakeProjection() const 
+		inline glm::mat4 MakeProjectionMatrix() const 
 			{ return glm::ortho<float>(0, frm.GetSize().x, 0, frm.GetSize().y); }
 		inline glm::mat4 MakePV() const 
-			{ return MakeProjection() * MakeViewMatrix(); }
+			{ return MakeProjectionMatrix() * MakeViewMatrix(); }
 
 		inline pos2d ScreenCrdsToAbs(pos2d pos) {
-			const glm::vec4 a = glm::vec4(pos.x - (frm.GetSize().x / 2.f), -(pos.y - (frm.GetSize().y / 2.f)), 0.f, 0.f);
-			const glm::vec4 res = a * MakeViewMatrix();
+			const glm::vec4 a = glm::vec4(pos.x, frm.GetSize().y - pos.y, 1.f, 1.f);
+			const glm::vec4 res = MakeViewMatrix() / a;
+
+			//const glm::mat4 transl = glm::translate(glm::mat4(1), glm::vec3(center_pos.x, center_pos.y, 0));
+			//const glm::vec4 test = a / transl;
 			return { static_cast<int>(res.x), static_cast<int>(res.y) };
 		}
 	};

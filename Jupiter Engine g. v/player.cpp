@@ -37,15 +37,25 @@ int main() {
 		JE::res.TxtSh().setMat4("pv", cam.MakePV());
 		
 
-		if (glfwGetKey(win.GetHandle(), GLFW_KEY_D))
+		if (glfwGetKey(win.GetHandle(), GLFW_KEY_Q))
 			cam.props.rotation += 2;
-		if (glfwGetKey(win.GetHandle(), GLFW_KEY_A))
+		if (glfwGetKey(win.GetHandle(), GLFW_KEY_E))
 			cam.props.rotation -= 2;
 
-		//if (glfwGetKey(win.GetHandle(), GLFW_KEY_W))
-		//	cam.props.scale.y += 0.2;
-		//if (glfwGetKey(win.GetHandle(), GLFW_KEY_S))
-		//	cam.props.scale.y -= 0.2;
+		if (glfwGetKey(win.GetHandle(), GLFW_KEY_D))
+			cam.center_pos.x += 2;
+		if (glfwGetKey(win.GetHandle(), GLFW_KEY_A))
+			cam.center_pos.x -= 2;
+
+		if (glfwGetKey(win.GetHandle(), GLFW_KEY_W))
+			cam.center_pos.y += 2;
+		if (glfwGetKey(win.GetHandle(), GLFW_KEY_S))
+			cam.center_pos.y -= 2;
+
+		if (glfwGetKey(win.GetHandle(), GLFW_KEY_R))
+			cam.props.scale.x += 0.2, cam.props.scale.y += 0.2;
+		if (glfwGetKey(win.GetHandle(), GLFW_KEY_F))
+			cam.props.scale.y -= 0.2, cam.props.scale.x -= 0.2;
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -62,7 +72,7 @@ int main() {
 		pos2d player_pos = cam.ScreenCrdsToAbs(conv_coords);
 		JE::Draw::BTexture(player, player_pos);
 
-		std::cout << player_pos.x << " " << player_pos.y << "\n";
+		std::cout << cam.center_pos.x << " " << cam.center_pos.y << "\n";
 
 		JE::Draw::DisplayFramebuffer(cam.frm, win);
 		win.End();

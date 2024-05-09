@@ -68,16 +68,6 @@ namespace JE {
 	Internals::EngineRes res;
 	
 	namespace Draw {
-		/*inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::Properties& props = {}) {
-			glm::mat4 model = glm::translate(model, glm::vec3(pos.x + props.origin.x, pos.y + props.origin.y, 0.0f));
-			model = glm::translate(model, glm::vec3(props.origin.x, props.origin.y, 0.0f));
-			model = glm::rotate(model, glm::radians(props.rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-			model = glm::translate(model, glm::vec3(-props.origin.x, -props.origin.y, 0.0f));
-			model = glm::scale(model, glm::vec3(texture_size.x * props.scale.x, texture_size.y * props.scale.y, 1.0f));
-
-			return model;
-		}*/
-		
 		inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::Properties& props = {}) {
 			glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3(pos.x, pos.y, 0.f));
 			model = props.Matrix(model);
@@ -207,7 +197,6 @@ namespace JE {
 			res.FbSh().Use();
 			glBindVertexArray(res.Qd().Handle());
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-			//frm.Bind();
 		}
 	}
 

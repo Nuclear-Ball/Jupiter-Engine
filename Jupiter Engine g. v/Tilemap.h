@@ -288,17 +288,13 @@ namespace JE {
 				}
 			}
 
-			inline pos2ds PosSize()
-			{
-				return pos_size;
-			}
+			inline pos2ds GetPosSize()
+				{ return pos_size; }
 
-			inline pos2ds NegSize()
-			{
-				return neg_size;
-			}
+			inline pos2ds GetNegSize()
+				{ return neg_size; }
 
-			const Tile& operator[](pos2ds pos) {
+			inline Tile Lookup(pos2ds pos) {
 				const pos2ds converted_quarter_size = { pos_size.x * (pos.x >= 0) + neg_size.x * !(pos.x >= 0),
 														pos_size.y * (pos.y >= 0) + neg_size.y * !(pos.y >= 0) };
 
@@ -308,22 +304,19 @@ namespace JE {
 				return (converted_pos.x < converted_quarter_size.x&& converted_pos.y < converted_quarter_size.y) ? quarters[((pos.y < 0) << 1) + (pos.x < 0)][converted_pos.y * converted_quarter_size.x + converted_pos.x] : empty;
 			}
 
-			void Set(pos2ds pos, const Tile& tile_value) {
+			Tile& operator[](pos2ds pos) {
 				const pos2ds converted_quarter_size = { pos_size.x * (pos.x >= 0) + neg_size.x * !(pos.x >= 0),
 														pos_size.y * (pos.y >= 0) + neg_size.y * !(pos.y >= 0) };
 
 				const pos2ds converted_pos = { pos.x * (pos.x >= 0) + -(pos.x + 1) * !(pos.x >= 0),
 											   pos.y * (pos.y >= 0) + -(pos.y + 1) * !(pos.y >= 0) };
 
-				if (!(tile_value == empty)) {
-					if (converted_pos.x >= converted_quarter_size.x)
-						pos.x >= 0 ? ResizeXP(pos.x + 1) : ResizeXN(pos.x - 1);
-					if (converted_pos.y >= converted_quarter_size.y)
-						pos.y >= 0 ? ResizeYP(pos.y + 1) : ResizeYN(pos.y - 1);
-				}
+				if (converted_pos.x >= converted_quarter_size.x)
+					pos.x >= 0 ? ResizeXP(pos.x + 1) : ResizeXN(pos.x - 1);
+				if (converted_pos.y >= converted_quarter_size.y)
+					pos.y >= 0 ? ResizeYP(pos.y + 1) : ResizeYN(pos.y - 1);
 
-				if (converted_pos.x < converted_quarter_size.x && converted_pos.y < converted_quarter_size.y)
-					quarters[((pos.y < 0) << 1) + (pos.x < 0)][converted_pos.y * converted_quarter_size.x + converted_pos.x] = tile_value;
+				return quarters[((pos.y < 0) << 1) + (pos.x < 0)][converted_pos.y * converted_quarter_size.x + converted_pos.x];
 			}
 		};
 	}
