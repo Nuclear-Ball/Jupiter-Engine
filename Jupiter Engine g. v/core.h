@@ -70,7 +70,7 @@ namespace JE {
 	namespace Draw {
 		inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::Properties& props = {}) {
 			glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3(pos.x, pos.y, 0.f));
-			model = props.Matrix(model);
+			model = props.MakeMatrix(model);
 			model = glm::scale(model, glm::vec3(texture_size.x, texture_size.y, 1.f));
 
 			return model;

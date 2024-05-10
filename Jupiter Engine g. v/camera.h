@@ -146,7 +146,7 @@ namespace JE {
 	class Camera {
 	public:
 		Framebuffer frm = Framebuffer(0);
-		pos2d center_pos = { 0, 0 };
+		pos2df center_pos = { 0, 0 };
 		JTexture::Frame::Properties props;
 
 		inline Camera() 
@@ -157,8 +157,8 @@ namespace JE {
 			{ frm.Init(); }
 
 		inline glm::mat4 MakeViewMatrix() const {
-			glm::mat4 view = props.Matrix(glm::translate(glm::mat4(1), glm::vec3(static_cast<float>(frm.GetSize().x) / 2.f, static_cast<float>(frm.GetSize().y) / 2.f, 0.f)));
-			view = glm::translate(view, glm::vec3(-center_pos.x, center_pos.y, 0.f));
+			glm::mat4 view = props.MakeMatrix(glm::translate(glm::mat4(1), glm::vec3(frm.GetSize().x / 2.f + props.origin.x, frm.GetSize().y / 2.f + props.origin.y, 0.f)));
+			view = glm::translate(view, glm::vec3(-center_pos.x + props.origin.x, center_pos.y + props.origin.y, 0.f));
 			return view;
 		}
 		inline glm::mat4 MakeProjectionMatrix() const 
@@ -167,11 +167,7 @@ namespace JE {
 			{ return MakeProjectionMatrix() * MakeViewMatrix(); }
 
 		inline pos2d ScreenCrdsToAbs(pos2d pos) {
-			const glm::vec4 a = glm::vec4(pos.x, frm.GetSize().y - pos.y, 1.f, 1.f);
-			const glm::vec4 res = MakeViewMatrix() / a;
-
-			//const glm::mat4 transl = glm::translate(glm::mat4(1), glm::vec3(center_pos.x, center_pos.y, 0));
-			//const glm::vec4 test = a / transl;
+			const glm::vec4 res = MakeViewMatrix() / glm::vec4(pos.x, frm.GetSize().y - pos.y, 1.f, 1.f);
 			return { static_cast<int>(res.x), static_cast<int>(res.y) };
 		}
 	};

@@ -277,8 +277,7 @@ namespace JE {
 				pos2df scale = { 1.0, 1.0 };
 				pos2d origin = { 0,0 };
 
-				glm::mat4 Matrix(glm::mat4 mtrx) const {
-					mtrx = glm::translate(mtrx, glm::vec3(origin.x, origin.y, 0.0f));
+				glm::mat4 MakeMatrix(glm::mat4 mtrx) const {
 					mtrx = glm::rotate(mtrx, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 					mtrx = glm::translate(mtrx, glm::vec3(-origin.x, -origin.y, 0.0f));
 					mtrx = glm::scale(mtrx, glm::vec3(scale.x, scale.y, 1.0f));
@@ -286,9 +285,8 @@ namespace JE {
 					return mtrx;
 				}
 
-				glm::mat4 Matrix() const {
-					glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3(origin.x, origin.y, 0.0f));
-					model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+				glm::mat4 MakeMatrix() const {
+					glm::mat4 model = glm::rotate(glm::mat4(1), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 					model = glm::translate(model, glm::vec3(-origin.x, -origin.y, 0.0f));
 					model = glm::scale(model, glm::vec3(scale.x, scale.y, 1.0f));
 

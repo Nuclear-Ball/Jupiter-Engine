@@ -36,6 +36,7 @@ int main() {
 		JE::res.TxtSh().Use();
 		JE::res.TxtSh().setMat4("pv", cam.MakePV());
 		
+		static float rotation = 0;
 
 		if (glfwGetKey(win.GetHandle(), GLFW_KEY_Q))
 			cam.props.rotation += 2;
@@ -70,7 +71,7 @@ int main() {
 		const pos2d conv_coords = { static_cast<int>(win.mouse.GetPos().x * size_ratio), static_cast<int>(win.mouse.GetPos().y * size_ratio) };
 
 		pos2d player_pos = cam.ScreenCrdsToAbs(conv_coords);
-		JE::Draw::BTexture(player, player_pos);
+		JE::Draw::BTexture(player, player_pos, { 1, 45, {1,1}, {10, 10} });
 
 		std::cout << cam.center_pos.x << " " << cam.center_pos.y << "\n";
 
