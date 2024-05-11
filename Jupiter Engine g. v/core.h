@@ -68,7 +68,7 @@ namespace JE {
 	Internals::EngineRes res;
 	
 	namespace Draw {
-		inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::Properties& props = {}) {
+		inline glm::mat4 MakeMatrix(pos2df pos, pos2dus texture_size, const JTexture::Frame::TransfProps& props = {}) {
 			glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3(pos.x, pos.y, 0.f));
 			model = props.MakeMatrix(model);
 			model = glm::scale(model, glm::vec3(texture_size.x, texture_size.y, 1.f));
@@ -76,28 +76,28 @@ namespace JE {
 			return model;
 		}
 
-		void BTexture(const JTexture::BasicTexture& txt, pos2d pos, const JTexture::Frame::Properties& props = {}) {
+		void BTexture(const JTexture::BasicTexture& txt, pos2d pos, const JTexture::Frame::TransfProps& props = {}, float transparency = 1.f) {
 			glm::mat4 model = MakeMatrix({ static_cast<float>(pos.x), static_cast<float>(pos.y) }, txt.GetSize(), props);
 			glm::vec4 test = glm::vec4(1.f, 1.f, 0.f, 0.f) * model;
 			res.TxtSh().Use();
 			res.TxtSh().setMat4("model", model);
-			res.TxtSh().setFloat("transparency", 1.0f - props.transparency);
+			res.TxtSh().setFloat("transparency", 1.0f - transparency);
 
 			txt.Use();
 			glBindVertexArray(res.Qd().Handle());
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		}
-		void Texture(const JTexture::Texture& txt, pos2d pos, const JTexture::Frame::Properties& props = {}) {
+		void Texture(const JTexture::Texture& txt, pos2d pos, const JTexture::Frame::TransfProps& props = {}, float transparency = 1.f) {
 			const JTexture::Frame& c_frame = txt.GetCurrentFrame();
-			const JTexture::Frame::Properties& frame_props = c_frame.properties;
+			const JTexture::Frame::TransfProps& frame_props = c_frame.properties;
 
 			glm::mat4 model = MakeMatrix({ static_cast<float>(pos.x), static_cast<float>(pos.y) }, c_frame.frame.GetSize(), 
-			{ 1, frame_props.rotation + props.rotation, {frame_props.scale.x + props.scale.x, frame_props.scale.y + props.scale.y}, 
+			{ frame_props.rotation + props.rotation, {frame_props.scale.x + props.scale.x, frame_props.scale.y + props.scale.y}, 
 			{frame_props.origin.x + props.origin.x, frame_props.origin.y + props.origin.y} });
 
 			res.TxtSh().Use();
 			res.TxtSh().setMat4("model", model);
-			res.TxtSh().setFloat("transparency", 1.0f - (frame_props.transparency - (1.0f - props.transparency)));
+			res.TxtSh().setFloat("transparency", 1.0f - (c_frame.transparency - (1.0f - transparency)));
 
 			c_frame.frame.Use();
 			glBindVertexArray(res.Qd().Handle());
@@ -205,7 +205,15 @@ namespace JE {
 		WorldTypes::Project gamedata;
 
 		void Render(Camera& cam) {
+			cam.frm.Bind();
+			res.TxtSh().Use();
+			res.TxtSh().setMat4("pv", cam.MakePV());
 
+
+
+			for (unsigned short c_layer_id = 0; c_layer_id < gamedata.CurrRoom().layers.size(); c_layer_id++) {
+
+			}
 		}
 	};
 }

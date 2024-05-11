@@ -147,7 +147,7 @@ namespace JE {
 	public:
 		Framebuffer frm = Framebuffer(0);
 		pos2df center_pos = { 0, 0 };
-		JTexture::Frame::Properties props;
+		JTexture::Frame::TransfProps props;
 
 		inline Camera() 
 			{ frm.Init(); }

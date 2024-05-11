@@ -100,7 +100,7 @@ namespace JE {
 				JSerial::Read reader(_template);
 			}*/
 
-			namespace FRM {
+			namespace FRM {/*
 				namespace PRT {
 					const JSerial::Template _template{ JSerial::Type<float>("transparency"),
 													   JSerial::Type<float>("rotation"),
@@ -108,11 +108,12 @@ namespace JE {
 													   JSerial::Type<pos2d>("origin") };
 					JSerial::C_Write<unsigned char> writer(_template);
 					JSerial::C_Read<unsigned char> reader(_template);
-				}
+				}*/
 
 				const JSerial::Template _template{ JSerial::Type<std::string>("frame texture data"),
 												   JSerial::Type<std::string>("frame texture properties"),
-												   JSerial::Type<float>("duration") };
+												   JSerial::Type<float>("duration"),
+												   JSerial::Type<float>("transparency") };
 				JSerial::Write writer(_template);
 				JSerial::Read reader(_template);
 			}
@@ -271,8 +272,7 @@ namespace JE {
 		};
 
 		struct Frame {
-			struct Properties {
-				float transparency = 1;
+			struct TransfProps {
 				float rotation = 0.0f;
 				pos2df scale = { 1.0, 1.0 };
 				pos2d origin = { 0,0 };
@@ -292,12 +292,12 @@ namespace JE {
 
 					return model;
 				}
-
+				/*
 				std::string Serialize() const {
 					using SerializationData::FRM::PRT::writer;
 					writer.Reset();
 
-					writer.WriteType(transparency);
+					//writer.WriteType(transparency);
 					writer.WriteType(rotation);
 					writer.WriteType(scale);
 					writer.WriteType(origin);
@@ -309,25 +309,27 @@ namespace JE {
 					using SerializationData::FRM::PRT::reader;
 					reader.Source(src);
 
-					transparency = reader.ReadType<float>("transparency");
+					//transparency = reader.ReadType<float>("transparency");
 					rotation = reader.ReadType<float>("rotation");
 					scale = reader.ReadType<pos2df>("scale");
 					origin = reader.ReadType<pos2d>("origin");
-				}
+				}*/
 			};
 
 			BasicTexture frame;
-			Properties properties;
+			TransfProps properties;
 			unsigned short additional_editor_id = 0;
 			float duration = 0.1;
+			float transparency = 1.f;
 
 			inline std::string Serialize() {
 				using SerializationData::FRM::writer;
 				writer.Reset();
 
 				writer.WriteType(frame.Serialize());
-				writer.WriteType(properties.Serialize());
+				writer.WriteType(JSerial::Bits::Separate(properties));
 				writer.WriteType(duration);
+				writer.WriteType(transparency);
 
 				return writer.Result();
 			}
@@ -336,8 +338,9 @@ namespace JE {
 				reader.Source(src);
 
 				frame.Deserialize(reader.ReadType<std::string>("frame texture data"));
-				properties.Deserialize(reader.ReadType<std::string>("frame texture properties"));
+				properties = JSerial::Bits::Merge<TransfProps>(reader.ReadType<std::string>("frame texture properties"));
 				duration = reader.ReadType<float>("duration");
+				transparency = reader.ReadType<float>("transparency");
 			}
 		};
 
