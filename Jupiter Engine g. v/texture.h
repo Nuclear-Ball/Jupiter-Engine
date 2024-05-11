@@ -469,10 +469,14 @@ namespace JE {
 
 			unsigned int load_frame_id = 0;
 
-			inline const Frame& GetCurrentFrame() const
-				{ return (animation_props.active_animation != 0) ? animations[animation_props.active_animation - 1].frames[animation_props.current_frame] : base_frame; }
-			inline const Frame& GetCurrentFrame(const AnimPlayerProperties& props) const
-				{ return (props.active_animation != 0) ? animations[props.active_animation - 1].frames[props.current_frame] : base_frame; }
+			inline const Frame& GetCurrentFrame() const {
+				const_cast<Texture*>(this)->Animate();
+				return (animation_props.active_animation != 0) ? animations[animation_props.active_animation - 1].frames[animation_props.current_frame] : base_frame; 
+			}
+			inline const Frame& GetCurrentFrame(const AnimPlayerProperties& props) const { 
+				const_cast<Texture*>(this)->Animate(const_cast<AnimPlayerProperties*>(&props));
+				return (props.active_animation != 0) ? animations[props.active_animation - 1].frames[props.current_frame] : base_frame; 
+			}
 			inline Animation* GetCurrentAnimation()
 				{ return (animation_props.active_animation != 0) ? &animations[animation_props.active_animation - 1] : nullptr; }
 

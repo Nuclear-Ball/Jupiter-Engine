@@ -87,7 +87,7 @@ namespace JE {
 			glBindVertexArray(res.Qd().Handle());
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		}
-		void Texture(const JTexture::Texture& txt, pos2d pos, JTexture::Frame::Properties props = {}) {
+		void Texture(const JTexture::Texture& txt, pos2d pos, const JTexture::Frame::Properties& props = {}) {
 			const JTexture::Frame& c_frame = txt.GetCurrentFrame();
 			const JTexture::Frame::Properties& frame_props = c_frame.properties;
 
