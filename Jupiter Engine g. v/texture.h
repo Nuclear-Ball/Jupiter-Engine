@@ -473,11 +473,11 @@ namespace JE {
 			unsigned int load_frame_id = 0;
 
 			inline const Frame& GetCurrentFrame() const {
-				const_cast<Texture*>(this)->Animate();
+				//const_cast<Texture*>(this)->Animate();
 				return (animation_props.active_animation != 0) ? animations[animation_props.active_animation - 1].frames[animation_props.current_frame] : base_frame; 
 			}
 			inline const Frame& GetCurrentFrame(const AnimPlayerProperties& props) const { 
-				const_cast<Texture*>(this)->Animate(const_cast<AnimPlayerProperties*>(&props));
+				//const_cast<Texture*>(this)->Animate(const_cast<AnimPlayerProperties*>(&props));
 				return (props.active_animation != 0) ? animations[props.active_animation - 1].frames[props.current_frame] : base_frame; 
 			}
 			inline Animation* GetCurrentAnimation()
@@ -605,15 +605,16 @@ namespace JE {
 	}
 
 	namespace Tiles {
-		struct t_tile {
-			JTexture::Texture tile_texture;
+		struct T_tile {
+			unsigned short texture_id = 0;
+			bool is_local = 0;
 		};
 
 		struct tileset {
 			std::string name = u8"Без имени";
-			std::vector<t_tile> tiles;
+			std::vector<T_tile> tiles;
 
-			std::string Serialize() {
+			std::string Serialize() {/*
 				JSerial::Template tset_templ = { JSerial::Array<std::string>("tiles"), JSerial::Type<std::string>("name") };
 
 				std::vector<std::string> serialized_tiles(tiles.size());
@@ -627,10 +628,10 @@ namespace JE {
 				tset_write.WriteArray(serialized_tiles);
 				tset_write.WriteType(name);
 
-				return tset_write.Result();
+				return tset_write.Result();*/
 			}
 
-			void Deserialize(std::string src) {
+			void Deserialize(std::string src) {/*
 				JSerial::Template tset_templ = { JSerial::Array<std::string>("tiles"), JSerial::Type<std::string>("name") };
 
 				JSerial::Read tset_read(tset_templ, src);
@@ -643,7 +644,7 @@ namespace JE {
 					tiles[i].tile_texture.Deserialize(serialized_tiles[i]);
 				}
 
-				name = tset_read.ReadType<std::string>("name");
+				name = tset_read.ReadType<std::string>("name");*/
 			}
 		};
 	}

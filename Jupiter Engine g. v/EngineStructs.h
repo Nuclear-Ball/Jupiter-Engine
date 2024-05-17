@@ -143,6 +143,7 @@ namespace JE {
 		struct GameResources {
 			std::vector<Tiles::tileset> tilesets;
 			std::unordered_map<std::string, unsigned short> tileset_hash;
+			std::vector<JTexture::Texture> textures;
 
 			//vector<prefab> prefabs;
 			//unordered_map<string, unsigned short> prefab_hash;
@@ -227,7 +228,7 @@ namespace JE {
 			GameResources global_res;
 			std::vector<Scene> scenes;
 			std::unordered_map<std::string, unsigned short> scene_hash;
-			unsigned short c_scene_id;
+			unsigned short c_scene_id = 0;
 
 			bool fullscreen = 0;
 			unsigned short screen_height = 256;

@@ -78,7 +78,6 @@ namespace JE {
 
 		void BTexture(const JTexture::BasicTexture& txt, pos2d pos, const JTexture::Frame::TransfProps& props = {}, float transparency = 1.f) {
 			glm::mat4 model = MakeMatrix({ static_cast<float>(pos.x), static_cast<float>(pos.y) }, txt.GetSize(), props);
-			glm::vec4 test = glm::vec4(1.f, 1.f, 0.f, 0.f) * model;
 			res.TxtSh().Use();
 			res.TxtSh().setMat4("model", model);
 			res.TxtSh().setFloat("transparency", 1.0f - transparency);
@@ -91,17 +90,11 @@ namespace JE {
 			const JTexture::Frame& c_frame = txt.GetCurrentFrame();
 			const JTexture::Frame::TransfProps& frame_props = c_frame.properties;
 
-			glm::mat4 model = MakeMatrix({ static_cast<float>(pos.x), static_cast<float>(pos.y) }, c_frame.frame.GetSize(), 
-			{ frame_props.rotation + props.rotation, {frame_props.scale.x + props.scale.x, frame_props.scale.y + props.scale.y}, 
-			{frame_props.origin.x + props.origin.x, frame_props.origin.y + props.origin.y} });
+			const JTexture::Frame::TransfProps combined_props = { frame_props.rotation + props.rotation, 
+																{ frame_props.scale.x * props.scale.x, frame_props.scale.y * props.scale.y },
+																{ frame_props.origin.x + props.origin.x, frame_props.origin.y + props.origin.y } };
 
-			res.TxtSh().Use();
-			res.TxtSh().setMat4("model", model);
-			res.TxtSh().setFloat("transparency", 1.0f - (c_frame.transparency - (1.0f - transparency)));
-
-			c_frame.frame.Use();
-			glBindVertexArray(res.Qd().Handle());
-			glDrawArrays(GL_TRIANGLES, 0, 6);
+			BTexture(c_frame.frame, pos, combined_props, c_frame.transparency - (1.0f - transparency));
 		}
 
 		void Line(pos2d start, pos2d end, int thickness = 1, rgb color = { 255, 255, 255, 255 }) {
@@ -209,10 +202,58 @@ namespace JE {
 			res.TxtSh().Use();
 			res.TxtSh().setMat4("pv", cam.MakePV());
 
+			//Необходимо найти диапазон поля зрения камеры
+			//Вариант: получить абсолютные координаты всех углов экрана и выбрать из них максимальные и минимальные
+			//Протестировано (20:59)
+			pos2d range_max;
+			pos2d range_min;
+			{
+				const pos2d upper_left = cam.ScreenCrdsToAbs({ 0, 0 });
+				const pos2d lower_left = cam.ScreenCrdsToAbs({ 0, cam.frm.GetSize().y });
+				const pos2d lower_right = cam.ScreenCrdsToAbs({ cam.frm.GetSize().x, cam.frm.GetSize().y });
+				const pos2d upper_right = cam.ScreenCrdsToAbs({ cam.frm.GetSize().x, 0 });
+
+				range_max = { std::max({ upper_left.x, lower_left.x, lower_right.x, upper_right.x }),
+							  std::max({ upper_left.y, lower_left.y, lower_right.y, upper_right.y }) };
+
+				range_min = { std::min({ upper_left.x, lower_left.x, lower_right.x, upper_right.x }),
+							  std::min({ upper_left.y, lower_left.y, lower_right.y, upper_right.y }) };
+			}
+
+			//Пройтись по всем слоям
+			for (WorldTypes::Layer& c_layer : gamedata.CurrRoom().layers) {
+				if (!c_layer.hidden) {
+					const pos2d с_layer_base_offset = { static_cast<int>(cam.center_pos.x * c_layer.parallax_speed.x),//Расчет смещения при параллаксе. Значение скорости параллакса по умолчанию 0, тогда слой неподвижен. При значении 1 слой будет двигаться вместе с камерой, 
+														static_cast<int>(cam.center_pos.y * c_layer.parallax_speed.y) };
+
+					const pos2d max_layer_loading_range = { range_max.x + с_layer_base_offset.x,
+															range_max.y + с_layer_base_offset.y };
+					const pos2d min_layer_loading_range = { range_min.x + с_layer_base_offset.x,
+															range_min.y + с_layer_base_offset.y };
 
 
-			for (unsigned short c_layer_id = 0; c_layer_id < gamedata.CurrRoom().layers.size(); c_layer_id++) {
+					const pos2ds tilemap_loading_range_max = { max_layer_loading_range.x / static_cast<float>(c_layer.tmap.grid_size.x),
+															   max_layer_loading_range.y / static_cast<float>(c_layer.tmap.grid_size.y) };
+					const pos2ds tilemap_loading_range_min = { min_layer_loading_range.x / static_cast<float>(c_layer.tmap.grid_size.x),
+															   min_layer_loading_range.y / static_cast<float>(c_layer.tmap.grid_size.y) };
+					//Тайловая карта
+					for (short tile_y = tilemap_loading_range_min.y; tile_y < tilemap_loading_range_max.y; tile_y++) {
+						for (short tile_x = tilemap_loading_range_min.x; tile_x < tilemap_loading_range_max.x; tile_x++) {
+							const Tiles::Tile c_tile = c_layer.tmap.Lookup({ tile_x, tile_y });
 
+							if (c_tile.tset_value) {
+								const Tiles::T_tile& c_t_tile = gamedata.Res(c_tile.is_local).tilesets[c_tile.tset_value - 1].tiles[c_tile.tile_value];
+								JTexture::Texture& c_texture = gamedata.Res(c_t_tile.is_local).textures[c_t_tile.texture_id];
+
+								c_texture.Animate();
+
+								Draw::Texture(c_texture, { tile_x * c_layer.tmap.grid_size.x + с_layer_base_offset.x, tile_y * c_layer.tmap.grid_size.y + с_layer_base_offset.y }, {}, c_layer.transparency);
+							}
+						}
+					}
+
+
+				}
 			}
 		}
 	};
