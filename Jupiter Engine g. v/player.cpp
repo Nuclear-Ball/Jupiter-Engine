@@ -42,10 +42,10 @@ int main() {
 	
 	cr.gamedata.scenes.resize(1);
 	cr.gamedata.scenes[0].rooms.resize(1);
-	cr.gamedata.CurrRoom().layers.resize(1);
-	cr.gamedata.CurrRoom().layers[0].tmap[{0, 0}] = { 0, 1, 0 };
-	cr.gamedata.CurrRoom().layers[0].tmap[{1, 0}] = { 0, 1, 0 };
-	cr.gamedata.CurrRoom().layers[0].tmap[{2, 0}] = { 0, 1, 0 };
+	cr.gamedata.curr_room().layers.resize(1);
+	cr.gamedata.curr_room().layers[0].tmap[{0, 0}] = { 0, 1, 0 };
+	cr.gamedata.curr_room().layers[0].tmap[{1, 0}] = { 0, 1, 0 };
+	cr.gamedata.curr_room().layers[0].tmap[{2, 0}] = { 0, 1, 0 };
 
 	while (win.Check()) {
 		win.Start();

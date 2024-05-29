@@ -86,7 +86,7 @@ namespace JE {
 			glBindVertexArray(res.Qd().Handle());
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		}
-		void Texture(const JTexture::Texture& txt, pos2d pos, const JTexture::Frame::TransfProps& props = {}, float transparency = 1.f) {
+		inline void Texture(const JTexture::Texture& txt, pos2d pos, const JTexture::Frame::TransfProps& props = {}, float transparency = 1.f) {
 			const JTexture::Frame& c_frame = txt.GetCurrentFrame();
 			const JTexture::Frame::TransfProps& frame_props = c_frame.properties;
 
@@ -220,8 +220,10 @@ namespace JE {
 							  std::min({ upper_left.y, lower_left.y, lower_right.y, upper_right.y }) };
 			}
 
+
+
 			//Пройтись по всем слоям
-			for (WorldTypes::Layer& c_layer : gamedata.CurrRoom().layers) {
+			for (WorldTypes::Layer& c_layer : gamedata.curr_room().layers) {
 				if (!c_layer.hidden) {
 					const pos2d с_layer_base_offset = { static_cast<int>(cam.center_pos.x * c_layer.parallax_speed.x),//Расчет смещения при параллаксе. Значение скорости параллакса по умолчанию 0, тогда слой неподвижен. При значении 1 слой будет двигаться вместе с камерой, 
 														static_cast<int>(cam.center_pos.y * c_layer.parallax_speed.y) };
@@ -251,6 +253,11 @@ namespace JE {
 							}
 						}
 					}
+
+					const pos2ds chunkmap_loading_range_max = { max_layer_loading_range.x / static_cast<float>(gamedata.curr_room().chunksize.x),
+																max_layer_loading_range.y / static_cast<float>(gamedata.curr_room().chunksize.y) };
+					const pos2ds chunkmap_loading_range_min = { min_layer_loading_range.x / static_cast<float>(gamedata.curr_room().chunksize.x),
+																min_layer_loading_range.y / static_cast<float>(gamedata.curr_room().chunksize.y) };
 
 
 				}
