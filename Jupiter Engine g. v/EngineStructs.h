@@ -54,6 +54,16 @@ namespace JE {
 			}
 		}
 
+		namespace Utils {
+			template<typename T> void Resize2dX(std::vector<T>& map, pos2ds size, short new_x) {
+				map.resize(new_x * size.y);
+
+				for (short i = size.y - 1; i >= 0; i--)
+					for (short j = size.x - 1; j >= 0; j--)
+						std::swap(map[i * new_x + j], map[i * size.x + j]);
+			}
+		}
+
 		class Chunkmap {
 		private:
 			std::vector<std::vector<unsigned short>> map[4];
@@ -73,47 +83,41 @@ namespace JE {
 			}
 
 			void ResizeXP(short x) {
-				map[0].resize(x * pos_size.y);
-				map[2].resize(x * neg_size.y);
-
-				for (short i = pos_size.y - 1; i >= 0; i--) { //Перенос элементов со старого места на новое
-					for (short j = 0; j < pos_size.x; j++) {
-						const short old_pos = i * pos_size.x + j;
-						const short new_pos = i * x + j;
-
-						map[new_pos] = std::move(map[old_pos]);
-					}
-					for (short j = x - pos_size.x; j < x; j++)
-						map[0][i * x + j] = std::move(std::vector<unsigned short>(0));
-					//memmove((quarters[0] + i * x), (quarters[0] + i * pos_size.x), pos_size.x * sizeof(Tile)),
-					//	memset((quarters[0] + i * x + pos_size.x), 0, (x - pos_size.x) * sizeof(Tile));
-				}
-				for (short i = neg_size.y - 1; i >= 0; i--)
-					memmove((quarters[2] + i * x), (quarters[2] + i * pos_size.x), pos_size.x * sizeof(Tile)),
-					memset((quarters[2] + i * x + pos_size.x), 0, (x - pos_size.x) * sizeof(Tile));
-
+				Utils::Resize2dX(map[0], pos_size, x);
+				Utils::Resize2dX(map[2], { pos_size.x, neg_size.y }, x);
 				pos_size.x = x;
 			}
 
 			void ResizeXN(short x) {
-				short cx = -(x + 1);
+				Utils::Resize2dX(map[1], { neg_size.x, pos_size.y }, x);
+				Utils::Resize2dX(map[3], neg_size, x);
+				neg_size.x = x;
+			}
+		public:
+			inline const std::vector<unsigned short>& Lookup(pos2ds pos) {
+				const pos2ds converted_quarter_size = { pos_size.x * (pos.x >= 0) + neg_size.x * !(pos.x >= 0),
+														pos_size.y * (pos.y >= 0) + neg_size.y * !(pos.y >= 0) };
 
-				quarters[1] = reinterpret_cast<Tile*>(realloc(quarters[1], pos_size.y * cx * sizeof(Tile)));
-				quarters[3] = reinterpret_cast<Tile*>(realloc(quarters[3], neg_size.y * cx * sizeof(Tile)));
+				const pos2ds converted_pos = { pos.x * (pos.x >= 0) + -(pos.x + 1) * !(pos.x >= 0),
+											   pos.y * (pos.y >= 0) + -(pos.y + 1) * !(pos.y >= 0) };
 
-				for (short i = pos_size.y - 1; i >= 0; i--) {
-					memmove((quarters[1] + i * cx), (quarters[1] + i * neg_size.x), neg_size.x * sizeof(Tile));
-					memset((quarters[1] + i * cx + neg_size.x), 0, (cx - neg_size.x) * sizeof(Tile));
-				}
-
-				for (short i = neg_size.y - 1; i >= 0; i--) {
-					memmove((quarters[3] + i * cx), (quarters[3] + i * neg_size.x), neg_size.x * sizeof(Tile));
-					memset((quarters[3] + i * cx + neg_size.x), 0, (cx - neg_size.x) * sizeof(Tile));
-				}
-
-				neg_size.x = cx;
+				return (converted_pos.x < converted_quarter_size.x&& converted_pos.y < converted_quarter_size.y) ? map[((pos.y < 0) << 1) + (pos.x < 0)][converted_pos.y * converted_quarter_size.x + converted_pos.x] : std::vector<unsigned short>(0);
 			}
 
+			std::vector<unsigned short>& operator[](pos2ds pos) {
+				const pos2ds converted_quarter_size = { pos_size.x * (pos.x >= 0) + neg_size.x * !(pos.x >= 0),
+														pos_size.y * (pos.y >= 0) + neg_size.y * !(pos.y >= 0) };
+
+				const pos2ds converted_pos = { pos.x * (pos.x >= 0) + -(pos.x + 1) * !(pos.x >= 0),
+											   pos.y * (pos.y >= 0) + -(pos.y + 1) * !(pos.y >= 0) };
+
+				if (converted_pos.x >= converted_quarter_size.x)
+					pos.x >= 0 ? ResizeXP(pos.x + 1) : ResizeXN(-pos.x);
+				if (converted_pos.y >= converted_quarter_size.y)
+					pos.y >= 0 ? ResizeYP(pos.y + 1) : ResizeYN(-pos.y);
+
+				return map[((pos.y < 0) << 1) + (pos.x < 0)][converted_pos.y * converted_quarter_size.x + converted_pos.x];
+			}
 		};
 
 		struct Object {
